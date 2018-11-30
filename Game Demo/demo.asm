@@ -31,9 +31,9 @@ start:
         sta     AUX_C
 
         ;; load zeros into the "0" character of our custom charset
-        ldx     #$00
-        lda     #$00
-copy_blank:
+        ldx     #$00                                                ;; DO NOT MOVE THIS NOR THE COPY_SPRITE FUNCTION. 
+        txa                                                         ;; THEY NEED TO BE TOGETHER.
+copy_blank:                                                        
         sta     SPACE_ADDRESS,X
         inx
         cpx     #48
@@ -63,7 +63,7 @@ copy_blank:
 ; 	bne	copy_blank3_debug
 
         ;; character sprites = first 256 bytes
-        ldx     #00
+        TAX
 copy_sprites:
         lda     sprite,X
         sta     SPRITE_ADDRESS,X
@@ -79,7 +79,6 @@ init_all_the_things:
 	sta     ANIMATE_STATUS
 	sta	GAME_STATUS	; if non-zero, then end the game
         sta     LETTER_STATE
-        sta     LEVEL
 
         lda     #$f6		; 4 characters away from right bottom corner
         sta     SCORE_LSB	; position of the score on screen 
@@ -102,20 +101,24 @@ init_all_the_things:
 	jsr	play_notes
 
         ;; initialize the timer to 0300 and the score to 0000
-        ldx     #$0
+        ldx     #4
+        lda     #NUM_ZERO        ; number 0
+        sta     LEVEL_ADDRESS
 init_score: 	
 	;; could use PRINT_STRING here but uses more bytes than doubling up
 	;; and printing both timer and score at the same time
 	;; Also, font colour should still be white from start screen - don't set
-        lda     #NUM_ZERO        ; number 0
-        sta	SCORE_ADDRESS,X  ; position of score
-        inx
-        cpx     #$04
+        sta	SCORE_ADDRESS-1,X  ; position of score
+        dex
         bne     init_score
 
 init_level:
-        inc     LEVEL
-
+        ldx     #NUM_ZERO + 3
+        cpx     LEVEL_ADDRESS
+        bne     render_sprites
+        jsr     end_screen
+render_sprites:
+        inc     LEVEL_ADDRESS
         lda     #$1e            ; load MSB
         sta     SPRITE_MSB
         
@@ -144,13 +147,8 @@ init_timer:
 	;; make timer 0300 instead of 0000 from init above
         sec
         lda     #NUM_ZERO + 4   ; number 3
-        sbc     LEVEL
+        sbc     LEVEL_ADDRESS
         sta     TIMER_ADDRESS + 1
-
-        lda     LEVEL
-        clc
-        adc     #NUM_ZERO
-        sta     LEVEL_ADDRESS
 
 	;; check win condition by automatically setting score
 	; ldy     #$00		    ; fourth digit

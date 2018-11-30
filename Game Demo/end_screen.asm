@@ -42,7 +42,7 @@ print_win_lose:
 
 print_level_and_score
 	;; print the level
-	lda	#NUM_ZERO		; CHANGE THIS
+	lda	LEVEL_ADDRESS		; CHANGE THIS
 	sta	$1eee
 
 	;; print the score
